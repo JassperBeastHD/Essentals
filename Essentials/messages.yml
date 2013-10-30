@@ -1,0 +1,28 @@
+---
+Default:
+    fileNotFound: '\"%1\" file not found.'
+    playerNotFound: 'Player not found.'
+Essentials:
+    burnMsg: 'You set %1 on fire for %2 seconds'
+    treeSpawned: 'Tree spawned.'
+    playerMuted: 'You have been muted'
+    playerUnmuted: 'You have been unmuted'
+    backAfterDeath: 'Use the /back command to return to your death point.'
+    backUsageMsg: 'Returning to previous location.'
+    inventoryCleared: 'Inventory Cleared.'
+    inventoryClearedOthers: 'Inventory of %1 cleared.'
+Login:
+    timeout: 'authentication timeout'
+    unregister: 'Registration has been canceled successfully.'
+    logout: 'Have been successfully logged out.'
+    register: 'Has been successfully registered.'
+    login: 'Login was successful.'
+    changepassword: 'Password has been changed successfully.'
+    notRegistered: 'You are not registered!'
+    notLogged: 'You are not logged!'
+    notPasswordMatch: 'Passwords do not match. %1/%2'
+    alreadyLogged: 'You are already logged in.'
+    alreadyRegistered: 'You have already registered.'
+    enterPasswordAgain: 'Please enter the password again.'
+    passwordIncorrect: 'The password is too long or too short. (%1 ~ %2)'
+Protect: [ ]

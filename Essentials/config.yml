@@ -1,0 +1,47 @@
+---
+login:
+  timeout: 60
+  allow-register: true
+  allow-chat: false
+  allow-commands:
+    - help
+    - list
+    - unregister
+    - changepassword
+  allow-move: false
+  pw-higher-then: 4
+  pw-less-then: 15
+  login-kick: 5
+chat-format: '<{DISPLAYNAME}> {MESSAGE}'
+blacklist:
+  placement: 8,9,10,11,46
+  usage: 259,325:8,325:10
+  break: 7
+kits:
+  tools:
+    - 256 1
+    - 257 1
+    - 258 1
+    - 267 1
+newbies:
+  kit: tools
+  message: 'Welcome {DISPLAYNAME} to the server!'
+creative-item:
+  op:
+    - 73 8
+    - 74 10
+  default: [ ]
+player-commands:
+  - help
+  - tell
+  - list
+  - back
+  - logout
+  - changepassword
+  - unregister
+  - clearinventory
+  - spawnpoint
+  - sethome
+  - delhome
+  - home
+  - spawn

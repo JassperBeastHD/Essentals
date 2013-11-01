@@ -11,6 +11,8 @@ Essentials:
     backUsageMsg: 'Returning to previous location.'
     inventoryCleared: 'Inventory Cleared.'
     inventoryClearedOthers: 'Inventory of %1 cleared.'
+    userIsAway: '%1 is now AFK'
+    userIsNotAway: '%1 is no longer AFK'
 Login:
     timeout: 'authentication timeout'
     unregister: 'Registration has been canceled successfully.'

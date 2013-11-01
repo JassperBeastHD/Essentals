@@ -4,7 +4,7 @@
 __PocketMine Plugin__
 name=EssentialsLogin
 description=EssentialsLogin
-version=2.0
+version=2.1
 author=KsyMC
 class=EssentialsLogin
 apiversion=10
@@ -23,8 +23,8 @@ class EssentialsLogin implements Plugin{
 		$this->api->event("server.close", array($this, "handler"));
 		$this->api->addHandler("player.join", array($this, "handler"), 50);
 		$this->api->addHandler("player.chat", array($this, "handler"), 50);
-		$this->api->addHandler("player.spawn", array($this, "logout"), 5);
-		$this->api->addHandler("player.respawn", array($this, "logout"), 50);
+		$this->api->addHandler("player.spawn", array($this, "handler"), 5);
+		$this->api->addHandler("player.respawn", array($this, "handler"), 50);
 		$this->api->addHandler("console.check", array($this, "handler"), 50);
 		$this->api->addHandler("console.command", array($this, "handler"), 50);
 		
@@ -48,34 +48,37 @@ class EssentialsLogin implements Plugin{
 	}
 	
 	public function checkTimer(){
-		foreach($this->api->player->online() as $username){
-			$player = $this->api->player->get($username);
-			if(!isset($this->data[$player->iusername])) return;
+		foreach($this->data as $iusername => $data){
+			$player = $this->api->player->get($iusername);
+			if($player === false) continue;
 			
 			if($this->getData($player, "status") == "logout"){
 				if((time() - $this->getData($player, "lastconnected")) >= $this->config["login"]["timeout"]){
-					$this->api->ban->kick($username, EssentialsAPI::getMessage("timeout"));
+					$this->api->ban->kick($iusername, EssentialsAPI::getMessage("timeout"));
+				}
+				if($this->getData($player, "registered") === false){
+					$player->sendChat("You must register using /register <password>");
+				}else{
+					$player->sendChat("You must authenticate using /login <password>");
 				}
 			}
 		}
 	}
 	
-	public function logout(Player $player, $event = false){
-		if($event == "player.spawn"){
-			$this->data[$player->iusername]["spawnpos"] = array(
-				$player->entity->x,
-				$player->entity->y,
-				$player->entity->z
-			);
-			foreach($player->inventory as $slot => $item){
-				$this->data[$player->iusername]["inventory"][$slot] = $player->getSlot($slot);
-				$player->setSlot($slot, BlockAPI::getItem(AIR, 0, 0));
-			}
-			$username = $player->username;
-			$spawn = $player->level->getSpawn();
-			$this->api->player->tppos($username, $spawn->x, $spawn->y, $spawn->z);
+	public function logout(Player $player){
+		$this->data[$player->iusername]["spawnpos"] = array(
+			$player->entity->x,
+			$player->entity->y,
+			$player->entity->z
+		);
+		foreach($player->inventory as $slot => $item){
+			$this->data[$player->iusername]["inventory"][$slot] = $player->getSlot($slot);
+			$player->setSlot($slot, BlockAPI::getItem(AIR, 0, 0));
 		}
-		if(!$this->config["login"]["allow-move"] and $this->getData($player, "status") == "logout"){
+		$username = $player->username;
+		$spawn = $player->level->getSpawn();
+		$this->api->player->tppos($username, $spawn->x, $spawn->y, $spawn->z);
+		if(!$this->config["login"]["allow-move"]){
 			$player->blocked = true;
 		}
 	}
@@ -83,7 +86,7 @@ class EssentialsLogin implements Plugin{
 	public function handler($data, $event){
 		switch($event){
 			case "server.close":
-				file_put_contents("./plugins/Essentials/Logindata.dat", serialize(array("password" => $this->data["password"], "registered" => $this->data["registered"])));
+				file_put_contents(DATA_PATH."/plugins/Essentials/Logindata.dat", serialize(array("password" => $this->data["password"], "registered" => $this->data["registered"])));
 				break;
 			case "player.join":
 				$this->setData($data, "lastconnected", time());
@@ -92,6 +95,12 @@ class EssentialsLogin implements Plugin{
 				}
 				$this->setData($data, "status", "logout");
 				$this->setData($data, "forget", 0);
+				break;
+			case "player.spawn":
+				$this->api->schedule(35, array($this, "logout"), $data);
+				break;
+			case "player.respawn";
+				if($this->getData($data, "status") == "logout") $data->blocked = true;
 				break;
 			case "console.check":
 				if($this->getData($data["issuer"], "status") == "logout" and in_array($data["cmd"], $this->config["login"]["allow-commands"])){
@@ -162,6 +171,7 @@ class EssentialsLogin implements Plugin{
 				
 				$output .= EssentialsAPI::getMessage("logout");
 				$this->api->handle("essentials.player.logout", $issuer);
+				$this->setData($issuer, "lastconnected", time());
 				$this->setData($issuer, "status", "logout");
 				break;
 			case "changepassword":

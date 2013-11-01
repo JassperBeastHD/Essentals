@@ -23,6 +23,8 @@ kits:
     - 257 1
     - 258 1
     - 267 1
+auto-afk: 60
+auto-afk-kick: -1
 newbies:
   kit: tools
   message: 'Welcome {DISPLAYNAME} to the server!'

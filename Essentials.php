@@ -4,18 +4,20 @@
 __PocketMine Plugin__
 name=Essentials
 description=Essentials
-version=2.0
+version=2.1
 author=KsyMC
 class=Essentials
 apiversion=10
 */
 
 class Essentials implements Plugin{
-	private $api, $server, $lang, $data, $motd;
+	private $api, $server, $lang, $data, $motd, $lastafk, $afk;
 	
 	public function __construct(ServerAPI $api, $server = false){
 		$this->api = $api;
 		$this->data = array();
+		$this->lastafk = array();
+		$this->afk = array();
 		$this->server = ServerAPI::request();
 		EssentialsAPI::setEssentials($this);
 	}
@@ -25,12 +27,14 @@ class Essentials implements Plugin{
 		$this->api->addHandler("player.join", array($this, "handler"), 5);
 		$this->api->addHandler("player.quit", array($this, "handler"), 5);
 		$this->api->addHandler("player.chat", array($this, "handler"), 5);
+		$this->api->addHandler("player.move", array($this, "handler"), 5);
 		$this->api->addHandler("player.spawn", array($this, "handler"), 5);
 		$this->api->addHandler("console.check", array($this, "handler"), 5);
 		$this->api->addHandler("player.teleport", array($this, "handler"), 5);
 		$this->api->addHandler("player.respawn", array($this, "handler"), 5);
 		$this->api->addHandler("console.command", array($this, "handler"), 5);
 		
+		$this->api->console->register("afk", "", array($this, "defaultCommands"));
 		$this->api->console->register("home", "<name>", array($this, "defaultCommands"));
 		$this->api->console->register("sethome", "<name>", array($this, "defaultCommands"));
 		$this->api->console->register("delhome", "<home>", array($this, "defaultCommands"));
@@ -46,6 +50,7 @@ class Essentials implements Plugin{
 		$this->readConfig();
 		
 		console("[INFO] Essentials enabled!");
+		$this->api->schedule(20, array($this, "checkAFK"), array(), true);
 	}
 	
 	public function __destruct(){}
@@ -69,6 +74,9 @@ class Essentials implements Plugin{
 				"break" => '',
 			),
 			"kits" => array(),
+			"auto-afk" => 300,
+			"auto-afk-kick" => -1,
+			"freeze-afk-players" => false,
 			"newbies" => array(
 				"kit" => "",
 				"message" => "Welcome {DISPLAYNAME} to the server!",
@@ -84,17 +92,32 @@ class Essentials implements Plugin{
 		}else{
 			console("[ERROR] \"messages.yml\" file not found!");
 		}
-		if(is_dir("./plugins/Essentials/userdata/") === false){
-			mkdir("./plugins/Essentials/userdata/");
+		if(is_dir(DATA_PATH."/plugins/Essentials/userdata/") === false){
+			mkdir(DATA_PATH."/plugins/Essentials/userdata/");
 		}
+		
 		$this->motd = $this->server->motd;
 		$this->server->motd = "";
 		$this->config = $this->api->plugin->readYAML($this->path."config.yml");
 	}
 	
+	public function checkAFK(){
+		foreach($this->lastafk as $iusername => $time){
+			$player = $this->api->player->get($iusername);
+			if((time() - $time) == $this->config["auto-afk"]){
+				$this->api->chat->broadcast($this->getMessage("userIsAway", array($player->username, "", "", "")));
+				$this->afk[$player->iusername] = true;
+			}
+			if((time() - $time) == $this->config["auto-afk-kick"]){
+				$this->api->ban->kick($iusername, "Auto AFK kick");
+			}
+		}
+	}
+	
 	public function handler(&$data, $event){
 		switch($event){
 			case "player.join":
+					$this->afk[$data->iusername] = false;
 					$this->data[$data->iusername] = new Config(DATA_PATH."/plugins/Essentials/userdata/".$data->iusername.".yml", CONFIG_YAML, array(
 						"ipAddress" => $data->ip,
 						"mute" => false,
@@ -105,6 +128,8 @@ class Essentials implements Plugin{
 				if($this->data[$data->iusername] instanceof Config){
 					$this->data[$data->iusername]->save();
 				}
+				unset($this->lastafk[$data->iusername]);
+				unset($this->afk[$data->iusername]);
 				break;
 			case "player.respawn":
 				$data->sendChat($this->getMessage("backAfterDeath"));
@@ -122,13 +147,23 @@ class Essentials implements Plugin{
 				$this->api->chat->broadcast($message);
 				return false;
 				break;
+			case "player.move":
+				if(EssentialsAPI::checkEssentialsLogin() and EssentialsAPI::checkLogin($data->player) === false){
+					break;
+				}
+				$this->lastafk[$data->player->iusername] = time();
+				if($this->afk[$data->player->iusername]){
+					$this->afk[$data->player->iusername] = false;
+					$this->api->chat->broadcast($this->getMessage("userIsNotAway", array($data->player->username, "", "", "")));
+				}
+				break;
 			case "console.check":
 				if(in_array($data["cmd"], $this->config["player-commands"]) or $this->api->ban->isOp($data["issuer"]->username)){
 					return true;
 				}
 				break;
 			case "console.command":
-				if($data["issuer"] instanceof Player){
+				if($data["issuer"] instanceof Player and $this->api->dhandle("get.player.permission", "") !== false){
 					if(EssentialsAPI::checkEssentialsLogin() and EssentialsAPI::checkLogin($data["issuer"]) === false){
 						break;
 					}
@@ -188,6 +223,14 @@ class Essentials implements Plugin{
 	public function defaultCommands($cmd, $params, $issuer, $alias){
 		$output = "";
 		switch($cmd){
+			case "afk":
+				if(!($issuer instanceof Player)){
+					$output .= "Please run this command in-game.\n";
+					break;
+				}
+				$this->api->chat->broadcast($this->getMessage("userIsAway", array($issuer->username, "", "", "")));
+				$this->afk[$issuer->iusername] = true;
+				break;
 			case "home":
 				if(!($issuer instanceof Player)){
 					$output .= "Please run this command in-game.\n";

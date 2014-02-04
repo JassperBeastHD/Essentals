@@ -109,7 +109,9 @@ class Essentials implements Plugin{
 				$this->afk[$player->iusername] = true;
 			}
 			if((time() - $time) == $this->config["auto-afk-kick"]){
-				$this->api->ban->kick($iusername, "Auto AFK kick");
+				//$this->api->ban->kick($iusername, "Auto AFK kick");
+				$player = $this->api->player->get($iusername, false);
+				$player->close("Auto AFK kick");
 			}
 		}
 	}

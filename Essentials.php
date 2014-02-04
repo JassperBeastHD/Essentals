@@ -103,14 +103,13 @@ class Essentials implements Plugin{
 	
 	public function checkAFK(){
 		foreach($this->lastafk as $iusername => $time){
-			$player = $this->api->player->get($iusername);
+			$player = $this->api->player->get($iusername, false);
 			if((time() - $time) == $this->config["auto-afk"]){
 				$this->api->chat->broadcast($this->getMessage("userIsAway", array($player->username, "", "", "")));
 				$this->afk[$player->iusername] = true;
 			}
 			if((time() - $time) == $this->config["auto-afk-kick"]){
 				//$this->api->ban->kick($iusername, "Auto AFK kick");
-				$player = $this->api->player->get($iusername, false);
 				$player->close("Auto AFK kick");
 			}
 		}

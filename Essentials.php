@@ -87,7 +87,7 @@ class Essentials implements Plugin{
 			),
 			"player-commands" => array(),
 		));
-		if(file_exists($this->path."messages.yml")){
+		if(is_file($this->path."messages.yml")){
 			$this->lang = new Config($this->path."messages.yml", CONFIG_YAML);
 		}else{
 			console("[ERROR] \"messages.yml\" file not found!");

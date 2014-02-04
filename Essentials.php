@@ -294,10 +294,10 @@ class Essentials implements Plugin{
 				$pos = $this->getData($issuer, "lastlocation");
 				if($pos !== false){
 					$name = $issuer->iusername;
-					if($$pos["world"] !== $issuer->level->getName()){
-						$this->api->player->teleport($name, "w:".$$pos["world"]);
+					if($pos["world"] !== $issuer->level->getName()){
+						$this->api->player->teleport($name, "w:".$pos["world"]);
 					}
-					$this->api->player->tppos($name, $$pos["x"], $$pos["y"], $$pos["z"]);
+					$this->api->player->tppos($name, $pos["x"], $pos["y"], $pos["z"]);
 					$output .= $this->getMessage("backUsageMsg");
 				}
 				break;

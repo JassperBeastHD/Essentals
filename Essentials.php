@@ -87,7 +87,7 @@ class Essentials implements Plugin{
 			),
 			"player-commands" => array(),
 		));
-		if(file_exists($this->path."messages.yml")){
+		if(is_file($this->path."messages.yml")){
 			$this->lang = new Config($this->path."messages.yml", CONFIG_YAML);
 		}else{
 			console("[ERROR] \"messages.yml\" file not found!");
@@ -103,13 +103,14 @@ class Essentials implements Plugin{
 	
 	public function checkAFK(){
 		foreach($this->lastafk as $iusername => $time){
-			$player = $this->api->player->get($iusername);
+			$player = $this->api->player->get($iusername, false);
 			if((time() - $time) == $this->config["auto-afk"]){
 				$this->api->chat->broadcast($this->getMessage("userIsAway", array($player->username, "", "", "")));
 				$this->afk[$player->iusername] = true;
 			}
 			if((time() - $time) == $this->config["auto-afk-kick"]){
-				$this->api->ban->kick($iusername, "Auto AFK kick");
+				//$this->api->ban->kick($iusername, "Auto AFK kick");
+				$player->close("Auto AFK kick");
 			}
 		}
 	}
@@ -294,10 +295,10 @@ class Essentials implements Plugin{
 				$pos = $this->getData($issuer, "lastlocation");
 				if($pos !== false){
 					$name = $issuer->iusername;
-					if($$pos["world"] !== $issuer->level->getName()){
-						$this->api->player->teleport($name, "w:".$$pos["world"]);
+					if($pos["world"] !== $issuer->level->getName()){
+						$this->api->player->teleport($name, "w:".$pos["world"]);
 					}
-					$this->api->player->tppos($name, $$pos["x"], $$pos["y"], $$pos["z"]);
+					$this->api->player->tppos($name, $pos["x"], $pos["y"], $pos["z"]);
 					$output .= $this->getMessage("backUsageMsg");
 				}
 				break;
